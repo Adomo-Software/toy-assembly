@@ -44,6 +44,25 @@ typedef struct {
 	int program_address;
 } Label;
 
+typedef struct {
+	int instruction_counter;
+	int line_counter;
+	int program_counter;
+	int label_counter;
+	int variable_counter;
+} G_counter;
+
+G_counter global_counter = {0};
+
+typedef struct {
+	Instruction instructions[MAX_INSTRUCTIONS];
+	Var variables[MAX_VARIABLES];
+	Label labels[MAX_LABELS];
+} G_array;
+
+G_array global_array;
+
+
 Instruction instructions[MAX_INSTRUCTIONS];
 Var variables[MAX_VARIABLES];
 Label labels[MAX_LABELS];
@@ -307,7 +326,7 @@ Instruction* parse_line(char* line) {
 		}
 	}
 	goto err;
-ok:
+ ok:
 	{
 		int j = 0;
 		while (true) {
@@ -334,7 +353,7 @@ ok:
 	instructions[instruction_counter].args[0] = args[0];
 	instructions[instruction_counter].args[1] = args[1];
 	return &instructions[instruction_counter++];
-err:
+ err:
 	err(token);
 	return NULL;
 }
@@ -373,16 +392,16 @@ void print_env() {
 }
 
 int main() {
-char code[] =
-	// factorial program
-	"MOV R1, 10\n"
-	"MOV R2, 0\n"
-	"LOOP:\n"
-	"ADD R2, R1\n"
-	"SUB R1, 1\n"
-	"JEZ R1, END\n"
-	"JUMP LOOP\n"
-	"END:\n";
+	char code[] =
+		// factorial program
+		"MOV R1, 10\n"
+		"MOV R2, 0\n"
+		"LOOP:\n"
+		"ADD R2, R1\n"
+		"SUB R1, 1\n"
+		"JEZ R1, END\n"
+		"JUMP LOOP\n"
+		"END:\n";
 
 	parse_code(code);
 	run_code();
