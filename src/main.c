@@ -45,11 +45,11 @@ typedef struct {
 } Label;
 
 typedef struct {
-	int instruction_counter;
-	int line_counter;
-	int program_counter;
-	int label_counter;
-	int variable_counter;
+	int instruction;
+	int line;
+	int program;
+	int label;
+	int variable;
 } G_counter;
 
 G_counter global_counter = {0};
@@ -62,18 +62,7 @@ typedef struct {
 
 G_array global_array;
 
-
-Instruction instructions[MAX_INSTRUCTIONS];
-Var variables[MAX_VARIABLES];
-Label labels[MAX_LABELS];
-
-int instruction_counter = 0;
-int line_counter = 0;
-int program_counter = 0;
-int label_counter = 0;
-int variable_counter = 0;
-
-#define P program_counter
+#define P global_counter.program
 
 int find_variable(Token token);
 int find_label(Token token);
@@ -94,7 +83,7 @@ void jlz(Args args);
 void mov(Args args) {
 	int parse_res;
 	int this_var = -1;
-	if (variable_counter >= MAX_VARIABLES) {
+	if (global_counter.variable >= MAX_VARIABLES) {
 		fprintf(stderr, "Error: Reached MAX_VARIABLES cap\n");
 		exit(1);
 		return;
@@ -102,21 +91,21 @@ void mov(Args args) {
 
 	this_var = find_variable(args[0]);
 	if (this_var == -1) {
-		this_var = variable_counter;
+		this_var = global_counter.variable;
 	} else {
-		variable_counter--;
+		global_counter.variable--;
 	}
 
 	if (atoi_1(args[1], &parse_res)) {
 		// copy variable value
-		variables[this_var].name = args[0];
-		variables[this_var].value = get_var(args[1])->value;
+		global_array.variables[this_var].name = args[0];
+		global_array.variables[this_var].value = get_var(args[1])->value;
 	} else {
 		// it's a numer
-		variables[this_var].name = args[0];
-		variables[this_var].value = parse_res;
+		global_array.variables[this_var].name = args[0];
+		global_array.variables[this_var].value = parse_res;
 	}
-	variable_counter++;
+	global_counter.variable++;
 }
 void add(Args args) {
 	int parse_res;
@@ -128,9 +117,9 @@ void add(Args args) {
 	}
 
 	if (atoi_1(args[1], &parse_res)) {
-		variables[this_var].value += get_var(args[1])->value;
+		global_array.variables[this_var].value += get_var(args[1])->value;
 	} else {
-		variables[this_var].value += parse_res;
+		global_array.variables[this_var].value += parse_res;
 	}
 }
 void sub(Args args) {
@@ -143,9 +132,9 @@ void sub(Args args) {
 	}
 
 	if (atoi_1(args[1], &parse_res)) {
-		variables[this_var].value -= get_var(args[1])->value;
+		global_array.variables[this_var].value -= get_var(args[1])->value;
 	} else {
-		variables[this_var].value -= parse_res;
+		global_array.variables[this_var].value -= parse_res;
 	}
 }
 void mul(Args args) {
@@ -159,13 +148,13 @@ void mul(Args args) {
 	}
 
 	if (atoi_1(args[1], &parse_res)) {
-		variables[this_var].value *= get_var(args[1])->value;
+		global_array.variables[this_var].value *= get_var(args[1])->value;
 	} else {
-		variables[this_var].value *= parse_res;
+		global_array.variables[this_var].value *= parse_res;
 	}
 }
 void jump(Args args) {
-	program_counter = find_label(args[0]) - 1;
+	global_counter.program = find_label(args[0]) - 1;
 }
 void jez(Args args) {
 	int parse_res;
@@ -183,7 +172,7 @@ void jez(Args args) {
 	}
 
 	if (test_num == 0) {
-		program_counter = find_label(args[1]) - 1;
+		global_counter.program = find_label(args[1]) - 1;
 	}
 }
 void jnz(Args args) {
@@ -202,7 +191,7 @@ void jnz(Args args) {
 	}
 
 	if (test_num != 0) {
-		program_counter = find_label(args[1]) - 1;
+		global_counter.program = find_label(args[1]) - 1;
 	}
 }
 void jgz(Args args) {
@@ -221,7 +210,7 @@ void jgz(Args args) {
 	}
 
 	if (test_num > 0) {
-		program_counter = find_label(args[1]) - 1;
+		global_counter.program = find_label(args[1]) - 1;
 	}
 }
 void jlz(Args args) {
@@ -240,7 +229,7 @@ void jlz(Args args) {
 	}
 
 	if (test_num < 0) {
-		program_counter = find_label(args[1]) - 1;
+		global_counter.program = find_label(args[1]) - 1;
 	}
 }
 void err(Token token) {printf("Command not found: %s\n", token);}
@@ -258,17 +247,17 @@ Command commands[] = {
 };
 
 int find_label(Token token) {
-	for (int i = 0; i < label_counter; i++) {
-		if (strcmp(labels[i].label_name, token) == 0) {
-			return labels[i].program_address;
+	for (int i = 0; i < global_counter.label; i++) {
+		if (strcmp(global_array.labels[i].label_name, token) == 0) {
+			return global_array.labels[i].program_address;
 		}
 	}
 	return -1;
 }
 
 int find_variable(Token token) {
-	for (int i = 0; i < variable_counter; i++) {
-		if (strcmp(variables[i].name, token) == 0) {
+	for (int i = 0; i < global_counter.variable; i++) {
+		if (strcmp(global_array.variables[i].name, token) == 0) {
 			return i;
 		}
 	}
@@ -299,7 +288,7 @@ void parse_code(char* code) {
 		*next_line = '\0';
 		parse_line(line);
 		line = next_line + 1;
-		line_counter++;
+		global_counter.line++;
 	}
 }
 
@@ -308,9 +297,9 @@ Instruction* parse_line(char* line) {
 		size_t len = strlen(line);
 		if (line[len - 1] == ':') {
 			line[len - 1] = '\0';
-			labels[label_counter].label_name = line;
-			labels[label_counter].program_address = instruction_counter;
-			label_counter++;
+			global_array.labels[global_counter.label].label_name = line;
+			global_array.labels[global_counter.label].program_address = global_counter.instruction;
+			global_counter.label++;
 			return NULL;
 		}
 	}
@@ -335,7 +324,7 @@ Instruction* parse_line(char* line) {
 				if (j >= commands[i].argc) {
 					fprintf(stderr, "%d | %s <= "
 							"%s expects %d arguments\n",
-							line_counter, line, commands[i].token, commands[i].argc);
+							global_counter.line, line, commands[i].token, commands[i].argc);
 					exit(1);
 				}
 				args[j] = token;
@@ -345,14 +334,14 @@ Instruction* parse_line(char* line) {
 		if (j < commands[i].argc) {
 			fprintf(stderr, "%d | %s <= "
 					"%s expects %d arguments\n",
-					line_counter + 1, line, commands[i].token, commands[i].argc);
+					global_counter.line + 1, line, commands[i].token, commands[i].argc);
 			exit(1);
 		}
 	}
-	instructions[instruction_counter].function = commands[i].function;
-	instructions[instruction_counter].args[0] = args[0];
-	instructions[instruction_counter].args[1] = args[1];
-	return &instructions[instruction_counter++];
+	global_array.instructions[global_counter.instruction].function = commands[i].function;
+	global_array.instructions[global_counter.instruction].args[0] = args[0];
+	global_array.instructions[global_counter.instruction].args[1] = args[1];
+	return &global_array.instructions[global_counter.instruction++];
  err:
 	err(token);
 	return NULL;
@@ -365,8 +354,8 @@ void run_line(char* line) {
 }
 
 void run_code() {
-	while (P < instruction_counter) {
-		instructions[P].function(instructions[P].args);
+	while (P < global_counter.instruction) {
+		global_array.instructions[P].function(global_array.instructions[P].args);
 		P++;
 	}
 }
@@ -378,7 +367,7 @@ Var* get_var(Token var) {
 		fprintf(stderr, "Error: Variable '%s' not declared.\n", var);
 		return NULL;
 	}
-	return &variables[i];
+	return &global_array.variables[i];
 }
 
 void print_var(Token var) {
@@ -386,8 +375,8 @@ void print_var(Token var) {
 }
 
 void print_env() {
-	for (int i = 0; i < variable_counter; i++) {
-		printf("%s = %d\n", variables[i].name, variables[i].value);
+	for (int i = 0; i < global_counter.variable; i++) {
+		printf("%s = %d\n", global_array.variables[i].name, global_array.variables[i].value);
 	}
 }
 
